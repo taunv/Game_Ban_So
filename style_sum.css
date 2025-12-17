@@ -11,7 +11,7 @@ body {
     font-family: 'Fredoka One', cursive; /* Dùng font đậm cho toàn bộ */
     overflow: hidden;
     touch-action: none;
-    height: 100vh;
+    height: 100dvh;
     display: flex;
     justify-content: center;
 }
