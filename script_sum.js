@@ -141,7 +141,7 @@ function init() {
     updateUI();
 
     // Tạo màn chơi ban đầu (5 hàng)
-    for(let r = 0; r < 5; r++) {
+    for(let r = 0; r < 4; r++) {
         // Hàng lẻ sẽ ít hơn 1 bóng
         let colsInRow = (r % 2 !== 0) ? COLS - 1 : COLS;
         for(let c = 0; c < colsInRow; c++) {
@@ -270,7 +270,7 @@ function handleInput(e) {
 
     // Vị trí súng
     const cannonX = CW / 2;
-    const cannonY = CH - RADIUS;
+    const cannonY = CH - (RADIUS * 4);
 
     // Tính góc
     const angle = Math.atan2(y - cannonY, x - cannonX);
