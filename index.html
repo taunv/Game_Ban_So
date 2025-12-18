@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bubble Sum Fixed</title>
+    <title>Bubble Sum Vick</title>
     <link rel="stylesheet" href="style_sum.css">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
 </head>
@@ -13,18 +13,35 @@
             <div class="info-box">
                 <span>ĐIỂM</span> <span id="score">0</span>
             </div>
+            
+            <div class="logo-box">
+                <img src="https://drive.google.com/uc?export=view&id=10uqf0TxKtz9mAcqFyRkkM1oOj3OiYXQ6" alt="Vick Logo" class="game-logo">
+            </div>
+
             <div class="info-box">
-                <span>TIẾP THEO</span> <span id="next-ball-val" class="preview-ball">?</span>
+                <span>TIẾP</span> <span id="next-ball-val" class="preview-ball">?</span>
             </div>
         </div>
+
         <canvas id="gameCanvas"></canvas>
         
-        <div id="modal" class="modal hidden">
+        <div id="start-screen" class="modal">
+            <div class="modal-content">
+                <img src="https://drive.google.com/uc?export=view&id=10uqf0TxKtz9mAcqFyRkkM1oOj3OiYXQ6" alt="Vick Logo" class="logo-large">
+                <h1 style="color: #2c3e50; margin-bottom: 5px;">BUBBLE SUM</h1>
+                <p style="margin-bottom: 20px; color: #7f8c8d;">Chọn độ khó để bắt đầu</p>
+                
+                <button onclick="startGame('easy')" class="btn-easy">DỄ (Tổng >= 10)</button>
+                <button onclick="startGame('hard')" class="btn-hard">KHÓ (Tổng >= 15)</button>
+            </div>
+        </div>
+
+        <div id="game-over-modal" class="modal hidden">
             <div class="modal-content">
                 <h2 id="modal-title">GAME OVER</h2>
                 <p>Điểm số:</p>
                 <h1 id="final-score">0</h1>
-                <button onclick="restartGame()">CHƠI LẠI</button>
+                <button onclick="showStartScreen()">MENU CHÍNH</button>
             </div>
         </div>
     </div>
