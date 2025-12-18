@@ -13,7 +13,7 @@ const stickSound = document.getElementById('stickSound');
 
 // --- CẤU HÌNH ---
 let CW, CH, RADIUS;
-const COLS = 7; // Giảm số cột xuống 7 để bóng to hơn, dễ nhìn hơn trên đt
+const COLS = 7; 
 let bubbles = [];
 let particles = [];
 let bullet = null;
@@ -22,7 +22,7 @@ let currValue = getRandomValue();
 let score = 0;
 let isGameOver = false;
 
-// Màu nền của bóng (Pastel dịu mắt)
+// Màu nền bóng
 const BUBBLE_COLORS = [
     '#ff7675', '#74b9ff', '#55efc4', '#ffeaa7', 
     '#a29bfe', '#fd79a8', '#fab1a0', '#81ecec', '#dfe6e9'
@@ -35,13 +35,12 @@ function resizeCanvas() {
     canvas.height = container.clientHeight - headerH;
     CW = canvas.width;
     CH = canvas.height;
-    // Tính bán kính: (Chiều rộng / số cột) / 2
     RADIUS = (CW / COLS) / 2;
 }
 
 function getRandomValue() { return Math.floor(Math.random() * 9) + 1; }
 
-// --- CLASS BONG BÓNG ---
+// --- CLASS BUBBLE ---
 class Bubble {
     constructor(c, r, val) {
         this.c = c;
@@ -53,44 +52,36 @@ class Bubble {
     }
 
     calcPos() {
-        // Lưới Hexagon: Hàng lẻ thụt vào 1 bán kính
         const offset = (this.r % 2 !== 0) ? RADIUS : 0;
         this.x = (this.c * RADIUS * 2) + RADIUS + offset;
-        // Khoảng cách giữa các hàng khít hơn (sin 60 độ)
         this.y = (this.r * RADIUS * 1.732) + RADIUS; 
     }
 
     draw() {
         ctx.beginPath();
-        ctx.arc(this.x, this.y, RADIUS - 2, 0, Math.PI * 2);
-        
-        // Màu nền phẳng, giảm độ bóng để đỡ chói
+        ctx.arc(this.x, this.y, RADIUS - 1, 0, Math.PI * 2);
         ctx.fillStyle = BUBBLE_COLORS[(this.val - 1) % BUBBLE_COLORS.length];
         ctx.fill();
-        
-        // Viền nhẹ
         ctx.strokeStyle = "rgba(0,0,0,0.1)";
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.closePath();
 
-        // --- SỐ XANH ĐẬM (FIX) ---
-        ctx.fillStyle = '#00264d'; // Xanh đậm đen
+        ctx.fillStyle = '#00264d'; 
         ctx.font = `bold ${Math.floor(RADIUS)}px 'Fredoka One', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        // Vẽ số +3px y để căn giữa thị giác tốt hơn
         ctx.fillText(this.val, this.x, this.y + 3);
     }
 }
 
-// --- CLASS VIÊN ĐẠN ---
+// --- CLASS BULLET ---
 class Bullet {
     constructor(x, y, angle, val) {
         this.x = x;
         this.y = y;
         this.val = val;
-        this.speed = CH / 35; // Tốc độ bay
+        this.speed = CH / 35; 
         this.dx = Math.cos(angle) * this.speed;
         this.dy = Math.sin(angle) * this.speed;
         this.radius = RADIUS;
@@ -100,7 +91,6 @@ class Bullet {
         this.x += this.dx;
         this.y += this.dy;
 
-        // Va chạm tường trái/phải
         if (this.x - this.radius <= 0) {
             this.x = this.radius;
             this.dx = -this.dx;
@@ -111,17 +101,16 @@ class Bullet {
     }
 
     draw() {
-        // Vẽ đạn y hệt Bubble
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius - 2, 0, Math.PI * 2);
         ctx.fillStyle = BUBBLE_COLORS[(this.val - 1) % BUBBLE_COLORS.length];
         ctx.fill();
-        ctx.strokeStyle = "#fff"; // Viền trắng cho đạn để dễ nhìn
+        ctx.strokeStyle = "#fff";
         ctx.lineWidth = 3;
         ctx.stroke();
         ctx.closePath();
 
-        ctx.fillStyle = '#00264d'; // Số xanh đậm
+        ctx.fillStyle = '#00264d';
         ctx.font = `bold ${Math.floor(RADIUS)}px 'Fredoka One'`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -140,9 +129,8 @@ function init() {
     modal.classList.add('hidden');
     updateUI();
 
-    // Tạo màn chơi ban đầu (5 hàng)
-    for(let r = 0; r < 4; r++) {
-        // Hàng lẻ sẽ ít hơn 1 bóng
+    // TẠO 3 HÀNG BÓNG (Theo yêu cầu trước: giảm số hàng cho gần)
+    for(let r = 0; r < 3; r++) {
         let colsInRow = (r % 2 !== 0) ? COLS - 1 : COLS;
         for(let c = 0; c < colsInRow; c++) {
             bubbles.push(new Bubble(c, r, getRandomValue()));
@@ -157,85 +145,101 @@ function updateUI() {
     nextBallPreview.style.backgroundColor = BUBBLE_COLORS[(nextValue-1)%BUBBLE_COLORS.length];
 }
 
-// --- XỬ LÝ VA CHẠM (QUAN TRỌNG) ---
+// --- LOGIC VA CHẠM MỚI (TÍNH TỔNG NHIỀU BÓNG) ---
 
 function checkCollision() {
     if (!bullet) return;
 
-    // 1. Chạm trần -> Dính
+    // 1. Chạm trần -> Xử lý dính
     if (bullet.y - RADIUS <= 0) {
-        snapBullet();
+        processHit(); 
         return;
     }
 
-    // 2. Va chạm với bóng trên lưới
+    // 2. Chạm bất kỳ bóng nào
     for (let i = 0; i < bubbles.length; i++) {
         const b = bubbles[i];
         const dist = Math.hypot(bullet.x - b.x, bullet.y - b.y);
 
-        // Khoảng cách va chạm < 2R (có trừ đi 1 chút để va chạm sâu hơn)
+        // Nếu va chạm
         if (dist < RADIUS * 2 * 0.85) {
-            
-            const sum = bullet.val + b.val;
-
-            if (sum >= 10) {
-                // NỔ (Sum >= 10)
-                createExplosion(b.x, b.y, BUBBLE_COLORS[(b.val-1)%9]);
-                createExplosion(bullet.x, bullet.y, BUBBLE_COLORS[(bullet.val-1)%9]);
-                
-                bubbles.splice(i, 1); // Xóa bóng bị trúng
-                bullet = null; // Xóa đạn
-                score += sum * 10;
-                
-                playSound(popSound);
-                
-                if (bubbles.length === 0) endGame(true);
-
-            } else {
-                // KHÔNG NỔ (Sum < 10) -> DÍNH LẠI
-                snapBullet();
-            }
-            return; // Kết thúc check sau khi va chạm
+            processHit(); // Xử lý logic tổng hợp tại đây
+            return;
         }
     }
 }
 
-// Hàm dính đạn vào lưới
-function snapBullet() {
-    playSound(stickSound);
-    
-    // Tìm tọa độ lưới gần nhất (cột, hàng)
-    // Công thức đảo ngược từ calcPos của Bubble
+// Hàm xử lý trung tâm khi va chạm xảy ra
+function processHit() {
+    // 1. Xác định vị trí lưới (Grid) mà viên đạn sẽ nằm vào
+    // (Logic: Tìm tọa độ snap gần nhất)
     let r = Math.round((bullet.y - RADIUS) / (RADIUS * 1.732));
-    
-    // Xác định offset của hàng đó
     let offset = (r % 2 !== 0) ? RADIUS : 0;
     let c = Math.round((bullet.x - RADIUS - offset) / (RADIUS * 2));
 
-    // Giới hạn biên
+    // Giới hạn biên (để không lỗi mảng)
     if (c < 0) c = 0;
     let colsInRow = (r % 2 !== 0) ? COLS - 1 : COLS;
     if (c >= colsInRow) c = colsInRow - 1;
 
-    // Kiểm tra xem vị trí đó có bóng chưa, nếu có thì tìm chỗ trống bên cạnh
-    // (Logic đơn giản: nếu trùng thì đẩy xuống 1 hàng)
-    let existing = bubbles.find(b => b.c === c && b.r === r);
-    if (existing) {
-        r++; // Đẩy xuống hàng dưới
-        // Tính lại cột cho hàng dưới
+    // Nếu vị trí này đã có bóng, đẩy xuống hàng dưới (tránh chồng đè)
+    if (bubbles.some(b => b.c === c && b.r === r)) {
+        r++;
         offset = (r % 2 !== 0) ? RADIUS : 0;
         c = Math.round((bullet.x - RADIUS - offset) / (RADIUS * 2));
     }
 
-    const newBubble = new Bubble(c, r, bullet.val);
-    bubbles.push(newBubble);
-    bullet = null;
+    // Tạo ra quả bóng ảo tại vị trí đó để tính toán
+    let newBubble = new Bubble(c, r, bullet.val);
 
-    // Kiểm tra Game Over (Chạm đáy)
-    // Đáy vùng an toàn cách mép dưới khoảng 2.5 quả bóng (chừa chỗ cho súng)
-    if (newBubble.y > CH - RADIUS * 2.5) {
-        endGame(false);
+    // 2. Tìm tất cả "Hàng xóm" (Neighbors) tiếp xúc với vị trí mới này
+    let neighbors = [];
+    let totalSum = bullet.val; // Bắt đầu bằng giá trị của đạn
+
+    bubbles.forEach(b => {
+        // Tính khoảng cách giữa bóng mới (ảo) và các bóng cũ
+        const dist = Math.hypot(newBubble.x - b.x, newBubble.y - b.y);
+        // Nếu khoảng cách < 2.1 * Radius nghĩa là đang chạm nhau
+        if (dist < RADIUS * 2.1) {
+            neighbors.push(b);
+            totalSum += b.val;
+        }
+    });
+
+    // 3. Kiểm tra Tổng
+    if (totalSum >= 10) {
+        // --- NỔ TẤT CẢ (Đạn + Hàng xóm) ---
+        
+        // Tạo hiệu ứng nổ cho đạn
+        createExplosion(bullet.x, bullet.y, BUBBLE_COLORS[(bullet.val-1)%9]);
+
+        // Xóa các hàng xóm và tạo hiệu ứng nổ cho chúng
+        neighbors.forEach(neighbor => {
+            createExplosion(neighbor.x, neighbor.y, BUBBLE_COLORS[(neighbor.val-1)%9]);
+            // Xóa khỏi mảng bubbles
+            const index = bubbles.indexOf(neighbor);
+            if (index > -1) bubbles.splice(index, 1);
+        });
+
+        playSound(popSound);
+        score += totalSum * 10;
+        
+        // Kiểm tra thắng
+        if (bubbles.length === 0) endGame(true);
+
+    } else {
+        // --- KHÔNG NỔ (< 10) -> DÍNH LẠI ---
+        playSound(stickSound);
+        bubbles.push(newBubble); // Thêm bóng mới vào lưới
+        
+        // Kiểm tra thua (Chạm vạch đỏ)
+        // Vạch đỏ cách đáy 4 lần bán kính (do súng đã nâng lên)
+        if (newBubble.y > CH - RADIUS * 4) {
+            endGame(false);
+        }
     }
+
+    bullet = null; // Xóa viên đạn đang bay
 }
 
 function createExplosion(x, y, color) {
@@ -249,13 +253,11 @@ function createExplosion(x, y, color) {
     }
 }
 
-// --- INPUT HANDLER (FIX LỖI BẮN) ---
+// --- INPUT HANDLER ---
 function handleInput(e) {
     if (bullet || isGameOver) return;
     
-    // Lấy vị trí click CHÍNH XÁC so với Canvas
     const rect = canvas.getBoundingClientRect();
-    
     let clientX, clientY;
     if (e.type.includes('touch')) {
         clientX = e.changedTouches[0].clientX;
@@ -268,17 +270,15 @@ function handleInput(e) {
     const x = clientX - rect.left;
     const y = clientY - rect.top;
 
-    // Vị trí súng
     const cannonX = CW / 2;
-    const cannonY = CH - (RADIUS * 4);
+    // VỊ TRÍ SÚNG MỚI: Đẩy lên cao để không bị che
+    const cannonY = CH - (RADIUS * 4); 
 
-    // Tính góc
     const angle = Math.atan2(y - cannonY, x - cannonX);
     
     bullet = new Bullet(cannonX, cannonY, angle, currValue);
     playSound(shootSound);
 
-    // Nạp đạn tiếp theo
     currValue = nextValue;
     nextValue = getRandomValue();
     updateUI();
@@ -290,10 +290,11 @@ function loop() {
 
     ctx.clearRect(0, 0, CW, CH);
 
-    // Vẽ vạch chết
+    // Vạch chết (Nâng cao lên tương ứng với súng)
+    const deadLineY = CH - (RADIUS * 4);
     ctx.beginPath();
-    ctx.moveTo(0, CH - RADIUS * 2.5);
-    ctx.lineTo(CW, CH - RADIUS * 2.5);
+    ctx.moveTo(0, deadLineY);
+    ctx.lineTo(CW, deadLineY);
     ctx.strokeStyle = 'rgba(231, 76, 60, 0.4)';
     ctx.setLineDash([10, 10]);
     ctx.lineWidth = 2;
@@ -301,30 +302,26 @@ function loop() {
     ctx.setLineDash([]);
     ctx.closePath();
 
-    // Vẽ bóng
     bubbles.forEach(b => b.draw());
 
-    // Vẽ đạn
     if (bullet) {
         bullet.update();
         bullet.draw();
         checkCollision();
     } else {
-        // Vẽ bóng chờ
         const cannonX = CW / 2;
-        const cannonY = CH - RADIUS;
+        const cannonY = CH - (RADIUS * 4); // Súng cao lên
         ctx.beginPath();
         ctx.arc(cannonX, cannonY, RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = BUBBLE_COLORS[(currValue - 1) % BUBBLE_COLORS.length];
         ctx.fill();
-        ctx.fillStyle = '#00264d'; // Số xanh đậm
+        ctx.fillStyle = '#00264d'; 
         ctx.font = `bold ${Math.floor(RADIUS)}px 'Fredoka One'`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(currValue, cannonX, cannonY + 3);
     }
 
-    // Hiệu ứng nổ
     particles.forEach((p, i) => {
         p.life -= 0.08;
         p.x += p.dx;
@@ -349,24 +346,18 @@ function endGame(win) {
     modalTitle.style.color = win ? "#27ae60" : "#c0392b";
 }
 
-function restartGame() {
-    init();
-}
+function restartGame() { init(); }
 
 function playSound(audio) {
     audio.currentTime = 0;
     audio.play().catch(()=>{});
 }
 
-// Events
 window.addEventListener('resize', () => { resizeCanvas(); init(); });
-// Mouse
 canvas.addEventListener('mousedown', handleInput);
-// Touch - Quan trọng: dùng touchend để lấy tọa độ thả tay
 canvas.addEventListener('touchend', (e) => {
     e.preventDefault(); 
     handleInput(e);
 }, {passive: false});
 
-// Bắt đầu
 window.onload = init;
